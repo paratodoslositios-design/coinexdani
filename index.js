@@ -5,6 +5,8 @@ import { WebSocket } from 'ws';
 import axios from 'axios';
 import crypto from 'crypto';
 
+
+
 dotenv.config();
 
 const app = express();
@@ -54,14 +56,20 @@ Hora: ${signal.timestamp.toLocaleString()}
 // Funci√≥n para calcular EMA
 function calculateEMA(data, period) {
   if (data.length < period) return null;
-
-  const k = 2 / (period + 1);
-  let ema = data[0].close;
-
-  for (let i = 1; i < period; i++) {
-    ema = data[i].close * k + ema * (1 - k);
+  
+  // Calcular SMA inicial
+  let sum = 0;
+  for (let i = 0; i < period; i++) {
+    sum += data[i].close;
   }
-
+  let ema = sum / period;
+  
+  // Calcular EMA para el resto de los datos
+  const k = 2 / (period + 1);
+  for (let i = period; i < data.length; i++) {
+    ema = (data[i].close * k) + (ema * (1 - k));
+  }
+  
   return ema;
 }
 
@@ -72,6 +80,9 @@ function checkTradingSignals() {
 
   const current15m = ethData['15m'][0];
   const current4h = ethData['4h'][0];
+  
+  console.log(`4H Trend: ${trend4h}, EMA200: ${ema200_4h.toFixed(2)}`);
+console.log(`15M - EMA20: ${ema20_15m.toFixed(2)}, EMA50: ${ema50_15m.toFixed(2)}`);
 
   // Calcular EMAs
   const ema200_4h = calculateEMA(ethData['4h'], 200);
@@ -248,6 +259,11 @@ app.get('/api/signals', (req, res) => {
 });
 
 // Iniciar servidor
+// Al inicio del servidor
+if (!COINEX_API_KEY || !COINEX_API_SECRET || !TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+  console.error('? Faltan variables de entorno cr®™ticas');
+  process.exit(1);
+}
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
