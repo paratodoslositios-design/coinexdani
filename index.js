@@ -9,15 +9,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuraci車n COINEX
+// Configuracion COINEX
 const COINEX_API_KEY = process.env.COINEX_API_KEY;
 const COINEX_API_SECRET = process.env.COINEX_API_SECRET;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// Validaci車n de variables de entorno
+// Validacion de variables de entorno
 if (!COINEX_API_KEY || !COINEX_API_SECRET || !TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-  console.error('? Faltan variables de entorno cr赤ticas. Verifica tu configuraci車n.');
+  console.error('? Faltan variables de entorno criticas. Verifica tu configuracion.');
   process.exit(1);
 }
 
@@ -27,14 +27,14 @@ let ethData = {
   '4h': []
 };
 
-// Historial de se?ales
+// Historial de senales
 let signalsHistory = [];
 
-// Funci車n para enviar alertas a Telegram
+// Funcion para enviar alertas a Telegram
 async function sendTelegramAlert(signal) {
   const emoji = signal.type === 'BUY' ? '??' : '??';
   const message = `
-${emoji} <b>Nueva Se?al de Trading</b> ${emoji}
+${emoji} <b>Nueva Senal de Trading</b> ${emoji}
 Exchange: COINEX
 Par: ETH/USDT
 Tipo: ${signal.type === 'BUY' ? 'COMPRA' : 'VENTA'}
@@ -54,14 +54,14 @@ Hora: ${signal.timestamp.toLocaleString()}
   }
 }
 
-// Funci車n CORREGIDA para calcular EMA
+// Funcion CORREGIDA para calcular EMA
 function calculateEMA(data, period) {
   if (data.length < period) return null;
   
-  // Invertir los datos para tenerlos de m芍s antiguo a m芍s reciente
+  // Invertir los datos para tenerlos de mas antiguo a mas reciente
   const reversedData = [...data].reverse();
   
-  // Calcular SMA inicial para los primeros 'period' per赤odos
+  // Calcular SMA inicial para los primeros 'period' periodos
   let sum = 0;
   for (let i = 0; i < period; i++) {
     sum += reversedData[i].close;
@@ -77,11 +77,11 @@ function calculateEMA(data, period) {
   return ema;
 }
 
-// Funci車n para verificar se?ales
+// Funcion para verificar senales
 function checkTradingSignals() {
   // Requerimos suficiente data para calcular los indicadores
   if (ethData['15m'].length < 51 || ethData['4h'].length < 201) {
-    console.log('? Esperando suficientes datos para calcular se?ales...');
+    console.log('? Esperando suficientes datos para calcular senales...');
     return;
   }
 
@@ -101,46 +101,46 @@ function checkTradingSignals() {
   // Determinar tendencia 4H
   const trend4h = current4h.close > ema200_4h ? 'bullish' : 'bearish';
 
-  // Calcular EMAs de la vela anterior (sin la vela m芍s reciente)
+  // Calcular EMAs de la vela anterior (sin la vela mas reciente)
   const prevEma20 = calculateEMA(ethData['15m'].slice(1), 20);
   const prevEma50 = calculateEMA(ethData['15m'].slice(1), 50);
 
   if (!prevEma20 || !prevEma50) return;
 
   // Debug logging
-  console.log('?? Datos para se?al:');
+  console.log('?? Datos para senal:');
   console.log(`   Precio actual: ${current15m.close.toFixed(2)}`);
   console.log(`   Tendencia 4H: ${trend4h} (EMA200: ${ema200_4h.toFixed(2)})`);
   console.log(`   EMA20 actual: ${ema20_15m.toFixed(2)}, anterior: ${prevEma20.toFixed(2)}`);
   console.log(`   EMA50 actual: ${ema50_15m.toFixed(2)}, anterior: ${prevEma50.toFixed(2)}`);
 
-  // Se?al de COMPRA
+  // Senal de COMPRA
   if (trend4h === 'bullish' && prevEma20 <= prevEma50 && ema20_15m > ema50_15m) {
     const signal = {
       type: 'BUY',
       price: current15m.close,
       timestamp: new Date(),
-      message: 'EMA20 cruz車 arriba EMA50 en 15M con tendencia alcista en 4H'
+      message: 'EMA20 cruzo arriba EMA50 en 15M con tendencia alcista en 4H'
     };
     signalsHistory.unshift(signal);
-    console.log('?? SE?AL DE COMPRA DETECTADA!');
+    console.log('?? SENAL DE COMPRA DETECTADA!');
     sendTelegramAlert(signal);
   }
-  // Se?al de VENTA
+  // Senal de VENTA
   else if (trend4h === 'bearish' && prevEma20 >= prevEma50 && ema20_15m < ema50_15m) {
     const signal = {
       type: 'SELL',
       price: current15m.close,
       timestamp: new Date(),
-      message: 'EMA20 cruz車 abajo EMA50 en 15M con tendencia bajista en 4H'
+      message: 'EMA20 cruzo abajo EMA50 en 15M con tendencia bajista en 4H'
     };
     signalsHistory.unshift(signal);
-    console.log('?? SE?AL DE VENTA DETECTADA!');
+    console.log('?? SENAL DE VENTA DETECTADA!');
     sendTelegramAlert(signal);
   }
 }
 
-// Conexi車n WebSocket a COINEX
+// Conexion WebSocket a COINEX
 function setupCOINEXWebSocket() {
   const ws = new WebSocket('wss://socket.coinex.com/');
   
@@ -186,14 +186,14 @@ function setupCOINEXWebSocket() {
           ethData[timeframe].unshift(candle); // Nueva vela
         }
 
-        // Mantener m芍ximo 300 velas en memoria
+        // Mantener maximo 300 velas en memoria
         if (ethData[timeframe].length > 300) {
           ethData[timeframe].pop();
         }
 
         console.log(`?? Actualizado ${timeframe}: ${candle.close.toFixed(2)} USDT`);
 
-        // Verificar se?ales en cada vela de 15m
+        // Verificar senales en cada vela de 15m
         if (timeframe === '15m') {
           checkTradingSignals();
         }
@@ -208,15 +208,15 @@ function setupCOINEXWebSocket() {
   });
 
   ws.on('close', () => {
-    console.log('?? Conexi車n WebSocket cerrada. Reconectando en 5 segundos...');
+    console.log('?? Conexion WebSocket cerrada. Reconectando en 5 segundos...');
     setTimeout(setupCOINEXWebSocket, 5000);
   });
 }
 
-// Cargar datos hist車ricos iniciales
+// Cargar datos historicos iniciales
 async function loadHistoricalData() {
   try {
-    console.log('?? Cargando datos hist車ricos...');
+    console.log('?? Cargando datos historicos...');
     const [res15m, res4h] = await Promise.all([
       axios.get('https://api.coinex.com/v1/market/kline', {
         params: {
@@ -252,12 +252,12 @@ async function loadHistoricalData() {
       timestamp: new Date(parseInt(item[0]) * 1000)
     })).reverse();
 
-    console.log('? Datos hist車ricos cargados:', {
+    console.log('? Datos historicos cargados:', {
       '15m': ethData['15m'].length,
       '4h': ethData['4h'].length
     });
   } catch (error) {
-    console.error('? Error cargando datos hist車ricos:', error.message);
+    console.error('? Error cargando datos historicos:', error.message);
   }
 }
 
@@ -302,7 +302,7 @@ app.listen(PORT, async () => {
   console.log(`   - /api/signals`);
   console.log(`   - /health`);
   
-  // Cargar datos hist車ricos primero
+  // Cargar datos historicos primero
   await loadHistoricalData();
   // Iniciar WebSocket
   setupCOINEXWebSocket();
